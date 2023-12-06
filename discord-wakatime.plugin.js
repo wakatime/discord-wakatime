@@ -66,7 +66,7 @@ module.exports = class WakaTime {
       entity: 'Discord',
       type: 'app',
       //project: project,
-      plugin: `discord-wakatime/${this.meta.version}`,
+      plugin: `betterdiscord/${BdApi.version} discord-wakatime/${this.meta.version}`,
     });
     const response = await BdApi.Net.fetch(url, {
       method: 'POST',
