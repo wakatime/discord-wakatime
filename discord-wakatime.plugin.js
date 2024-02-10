@@ -16,11 +16,11 @@ module.exports = class WakaTime {
 
   start() {
     console.log(`Initializing WakaTime plugin v${this.meta.version}`);
-    if (readSetting(getHomeDirectory() + '/.wakatime.cfg', 'settings', 'debug') == 'true') {
+    this.home = getHomeDirectory();
+    if (readSetting(this.home + '/.wakatime.cfg', 'settings', 'debug') == 'true') {
       this.debug = true;
       console.log('WakaTime debug mode enabled');
     }
-    this.detectOS();
     this.handler = this.handleAction.bind(this);
     document.addEventListener('click', this.handler);
   }
@@ -30,20 +30,8 @@ module.exports = class WakaTime {
     document.removeEventListener('click', this.handler);
   }
 
-  detectOS() {
-    const folder = BdApi.Plugins.folder;
-    if (this.debug) console.log(`Plugin folder: ${folder}`);
-    if (folder.includes('Application Support')) {
-      this.os = 'macos';
-    } else if (folder.includes(':')) {
-      this.os = 'windows';
-    } else {
-      this.os = 'linux';
-    }
-  }
-
   getSettingsPanel() {
-    const key = readSetting(getHomeDirectory() + '/.wakatime.cfg', 'settings', 'api_key') || '';
+    const key = readSetting(this.home + '/.wakatime.cfg', 'settings', 'api_key') || '';
     let template = document.createElement('template');
     template.innerHTML = `<div style="color: var(--header-primary); font-size: 16px; font-weight: 300; white-space: pre; line-height: 22px;">API Key <input name="api_key" value=${key} size="50" /><p><a href="https://wakatime.com/api-key" target="_blank">https://wakatime.com/api-key</a></p></div>`;
     template.content.firstElementChild.querySelector('input').addEventListener('keyup', this.onChangeApiKey);
@@ -52,7 +40,7 @@ module.exports = class WakaTime {
 
   onChangeApiKey(e) {
     const key = e.target.value;
-    setSetting(getHomeDirectory() + '/.wakatime.cfg', 'settings', 'api_key', key);
+    setSetting(this.home + '/.wakatime.cfg', 'settings', 'api_key', key);
   }
 
   enoughTimePassed() {
@@ -67,7 +55,7 @@ module.exports = class WakaTime {
   }
 
   async sendHeartbeat(time) {
-    const key = readSetting(getHomeDirectory() + '/.wakatime.cfg', 'settings', 'api_key');
+    const key = readSetting(this.home + '/.wakatime.cfg', 'settings', 'api_key');
     if (!key) return;
     if (this.debug) {
       console.log(`Sending heartbeat to WakaTime API.`);
@@ -79,7 +67,7 @@ module.exports = class WakaTime {
       entity: 'Discord',
       type: 'app',
       //project: project,
-      plugin: `${this.os} betterdiscord/${BdApi.version} discord-wakatime/${this.meta.version}`,
+      plugin: `${this.osName()} betterdiscord/${BdApi.version} discord-wakatime/${this.meta.version}`,
     });
     const response = await BdApi.Net.fetch(url, {
       method: 'POST',
@@ -92,6 +80,12 @@ module.exports = class WakaTime {
     });
     const data = await response.text();
     if (response.status < 200 || response.status >= 300) console.warn(`WakaTime API Error ${response.status}: ${data}`);
+  }
+
+  osName() {
+    let osname = process.platform;
+    if (osname == 'win32') osname = 'windows';
+    return osname;
   }
 };
 
