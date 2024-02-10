@@ -2,7 +2,7 @@
  * @name WakaTime
  * @author WakaTime
  * @description Automatic time tracking and stats about your Discord usage.
- * @version 1.0.0
+ * @version 1.0.1
  */
 
 const fs = require('fs');
