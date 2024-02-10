@@ -20,6 +20,7 @@ module.exports = class WakaTime {
       this.debug = true;
       console.log('WakaTime debug mode enabled');
     }
+    this.detectOS();
     this.handler = this.handleAction.bind(this);
     document.addEventListener('click', this.handler);
   }
@@ -27,6 +28,18 @@ module.exports = class WakaTime {
   stop() {
     console.log('Unloading WakaTime plugin');
     document.removeEventListener('click', this.handler);
+  }
+
+  detectOS() {
+    const folder = BdApi.Plugins.folder;
+    if (this.debug) console.log(`Plugin folder: ${folder}`);
+    if (folder.includes('Application Support')) {
+      this.os = 'macos';
+    } else if (folder.includes(':')) {
+      this.os = 'windows';
+    } else {
+      this.os = 'linux';
+    }
   }
 
   getSettingsPanel() {
@@ -66,7 +79,7 @@ module.exports = class WakaTime {
       entity: 'Discord',
       type: 'app',
       //project: project,
-      plugin: `betterdiscord/${BdApi.version} discord-wakatime/${this.meta.version}`,
+      plugin: `${this.os} betterdiscord/${BdApi.version} discord-wakatime/${this.meta.version}`,
     });
     const response = await BdApi.Net.fetch(url, {
       method: 'POST',
