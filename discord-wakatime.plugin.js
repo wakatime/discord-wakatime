@@ -16,8 +16,7 @@ module.exports = class WakaTime {
 
   start() {
     console.log(`Initializing WakaTime plugin v${this.meta.version}`);
-    this.home = getHomeDirectory();
-    if (readSetting(this.home + '/.wakatime.cfg', 'settings', 'debug') == 'true') {
+    if (readSetting(this.homeDirectory() + '/.wakatime.cfg', 'settings', 'debug') == 'true') {
       this.debug = true;
       console.log('WakaTime debug mode enabled');
     }
@@ -31,7 +30,7 @@ module.exports = class WakaTime {
   }
 
   getSettingsPanel() {
-    const key = readSetting(this.home + '/.wakatime.cfg', 'settings', 'api_key') || '';
+    const key = readSetting(this.homeDirectory() + '/.wakatime.cfg', 'settings', 'api_key') || '';
     let template = document.createElement('template');
     template.innerHTML = `<div style="color: var(--header-primary); font-size: 16px; font-weight: 300; white-space: pre; line-height: 22px;">API Key <input name="api_key" value=${key} size="50" /><p><a href="https://wakatime.com/api-key" target="_blank">https://wakatime.com/api-key</a></p></div>`;
     template.content.firstElementChild.querySelector('input').addEventListener('keyup', this.onChangeApiKey);
@@ -40,7 +39,7 @@ module.exports = class WakaTime {
 
   onChangeApiKey(e) {
     const key = e.target.value;
-    setSetting(this.home + '/.wakatime.cfg', 'settings', 'api_key', key);
+    setSetting(this.homeDirectory() + '/.wakatime.cfg', 'settings', 'api_key', key);
   }
 
   enoughTimePassed() {
@@ -55,7 +54,7 @@ module.exports = class WakaTime {
   }
 
   async sendHeartbeat(time) {
-    const key = readSetting(this.home + '/.wakatime.cfg', 'settings', 'api_key');
+    const key = readSetting(this.homeDirectory() + '/.wakatime.cfg', 'settings', 'api_key');
     if (!key) return;
     if (this.debug) {
       console.log(`Sending heartbeat to WakaTime API.`);
@@ -69,14 +68,17 @@ module.exports = class WakaTime {
       //project: project,
       plugin: `${this.osName()} betterdiscord/${BdApi.version} discord-wakatime/${this.meta.version}`,
     });
+    const headers = {
+      Authorization: `Basic ${key}`,
+      'Content-Type': 'application/json',
+      'Content-Length': new TextEncoder().encode(body).length,
+    };
+    const machine = this.machineName();
+    if (machine) headers['X-Machine-Name'] = machine;
     const response = await BdApi.Net.fetch(url, {
       method: 'POST',
       body: body,
-      headers: {
-        Authorization: `Basic ${key}`,
-        'Content-Type': 'application/json',
-        'Content-Length': new TextEncoder().encode(body).length,
-      },
+      headers: headers,
     });
     const data = await response.text();
     if (response.status < 200 || response.status >= 300) console.warn(`WakaTime API Error ${response.status}: ${data}`);
@@ -87,15 +89,46 @@ module.exports = class WakaTime {
     if (osname == 'win32') osname = 'windows';
     return osname;
   }
-};
 
-function getHomeDirectory() {
-  let home = process.env.WAKATIME_HOME;
-  if (home && home.trim() && fs.existsSync(home.trim())) return home.trim();
-  if (process.env.USERPROFILE) return process.env.USERPROFILE;
-  if (process.env.HOME) return process.env.HOME;
-  return process.cwd();
-}
+  machineName() {
+    if (this.machine) return this.machine;
+    const osname = this.osName();
+    if (osname == 'darwin') {
+      const content = readFile('/Library/Preferences/SystemConfiguration/com.apple.smb.server.plist');
+      const lines = content.split('\n');
+      let found = false;
+      for (var i = 0; i < lines.length; i++) {
+        let line = lines[i];
+        if (found && line.includes('<string>')) {
+          this.machine = line.trim().replace('<string>', '').replace('</string>', '').trim();
+          found = false;
+        } else if (line.trim() == '<key>NetBIOSName</key>') {
+          found = true;
+        }
+      }
+    } else if (osname == 'windows') {
+      this.machine = process.env.COMPUTERNAME;
+    } else {
+      this.machine = readFile('/etc/hostname').trim();
+    }
+    return this.machine;
+  }
+
+  homeDirectory() {
+    if (this.home) return this.home;
+    let home = process.env.WAKATIME_HOME;
+    if (home && home.trim() && fs.existsSync(home.trim())) {
+      this.home = home.trim();
+    } else if (process.env.USERPROFILE) {
+      this.home = process.env.USERPROFILE;
+    } else if (process.env.HOME) {
+      this.home = process.env.HOME;
+    } else {
+      this.home = process.cwd();
+    }
+    return this.home;
+  }
+};
 
 function readSetting(file, section, key) {
   try {
