@@ -6,6 +6,8 @@
 
 1. Install [BetterDiscord](https://betterdiscord.app/)
 
+    Note: BetterDiscord is not affiliated with Discord. Please read their [FAQ](https://docs.betterdiscord.app/users/getting-started/faq) for more information.
+
 2. Download the [latest release](https://github.com/wakatime/discord-wakatime/releases/latest)
 
 3. Move `discord-wakatime.plugin.js` to [your plugin folder](https://docs.betterdiscord.app/plugins/introduction/quick-start#plugin-folder)
