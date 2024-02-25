@@ -18,6 +18,15 @@
 
 6. Use Discord and your activity will be displayed on your [WakaTime dashboard](https://wakatime.com)
 
+### Arch Linux (AUR)
+If you are on an arch-linux based distribution and you also have installed `BetterDiscord` you can install this plugin directly from the [AUR](https://aur.archlinux.org/).
+
+``` shell
+yay -S discord-wakatime
+```
+
+Note that you can use whatever [AUR helper](https://wiki.archlinux.org/title/AUR_helpers) you prefer instead of `yay`.
+
 ## Usage
 
 Visit [https://wakatime.com](https://wakatime.com) to see your activity.
